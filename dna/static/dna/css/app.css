@@ -365,6 +365,7 @@ select, input[type="search"], input[type="text"] { font: inherit; color: var(--i
 .row-link { cursor: pointer; }
 .strong-row td { font-weight: 600; }
 .scroll-x { overflow-x: auto; }
+.wide-left .table .path { max-width: 240px; }
 .heat { display: inline-block; min-width: 40px; text-align: center; padding: 2px 6px; border-radius: 6px; font-weight: 600; font-size: .8rem; background: linear-gradient(90deg, color-mix(in srgb, var(--t1) 28%, transparent) var(--heat), var(--surface-2) var(--heat)); }
 
 /* --- hotspots ---------------------------------------------------------- */
