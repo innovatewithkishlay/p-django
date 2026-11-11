@@ -32,7 +32,10 @@ class Rule:
 RULES = [
     Rule(
         "hardcoded-secret", "Credential written directly in code", "critical",
-        re.compile(r"""(?i)\b(api[_-]?key|secret[_-]?key|client[_-]?secret|password|passwd|auth[_-]?token|access[_-]?token|private[_-]?key)\b["']?\s*[:=]\s*["']([^"'\s]{8,})["']"""),
+        re.compile(
+            r"""(?i)(?:\b|(?<=_))(api[_-]?(?:key|token|secret)|secret(?:[_-]?key)?|client[_-]?secret|password|passwd"""
+            r"""|(?:auth|access|refresh|bearer)[_-]?token|private[_-]?key)\b["']?\s*[:=]\s*["']([^"'\s]{8,})["']"""
+        ),
         (), "A value that looks like a real credential is committed to the repository. Anyone with read access "
             "(and every fork, clone and CI log) now has it, and git history keeps it even after you delete the line.",
         "Rotate the credential first, then load it from an environment variable or a secrets manager.",

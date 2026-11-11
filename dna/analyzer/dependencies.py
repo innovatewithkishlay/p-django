@@ -98,7 +98,7 @@ def parse_requirements(text, manifest):
     deps = []
     for raw in text.splitlines():
         line = raw.split(" #")[0].strip()
-        if not line or line.startswith(("#", "-", "git+", "http")):
+        if not line or line.startswith(("#", "-", "git+", "http://", "https://")):
             continue
         m = _REQ_LINE.match(line)
         if m:
