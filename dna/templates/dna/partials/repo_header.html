@@ -1,0 +1,67 @@
+{% load humanize %}
+<section class="repo-head">
+  <div class="wrap">
+    <p class="crumbs"><a href="{% url 'dna:home' %}">Repositories</a> <span aria-hidden="true">/</span> {{ repo.owner|default:"local" }}</p>
+    <div class="repo-head-row">
+      <div>
+        <h1 class="repo-title">{% if repo.owner %}<span class="muted">{{ repo.owner }}/</span>{% endif %}{{ repo.name }}</h1>
+        <p class="repo-meta">
+          {% if repo.primary_language %}<span class="chip">{{ repo.primary_language }}</span>{% endif %}
+          {% if repo.default_branch %}<span class="meta-item"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M5 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 0v9m0 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm9-9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 1.5c0 3-7.5 2.5-8.5 6" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>{{ repo.default_branch }}</span>{% endif %}
+          <span class="meta-item">{{ snapshots|length }} snapshot{{ snapshots|length|pluralize }}</span>
+          {% if repo.last_analyzed_at %}<span class="meta-item">analysed {{ repo.last_analyzed_at|naturaltime }}</span>{% endif %}
+          {% if repo.web_url %}<a class="meta-item link" href="{{ repo.web_url }}" target="_blank" rel="noopener">View on GitHub ↗</a>{% endif %}
+        </p>
+      </div>
+      <div class="repo-actions">
+        <form method="post" action="{% url 'dna:reanalyze' repo.slug %}">
+          {% csrf_token %}
+          <button class="btn" type="submit" {% if run.is_active %}disabled{% endif %}>Check for new commits</button>
+        </form>
+        <details class="menu">
+          <summary class="btn btn-ghost" aria-label="More actions">•••</summary>
+          <div class="menu-panel">
+            <form method="post" action="{% url 'dna:reanalyze' repo.slug %}">
+              {% csrf_token %}<input type="hidden" name="mode" value="full">
+              <button type="submit" {% if run.is_active %}disabled{% endif %}>Rebuild all snapshots</button>
+            </form>
+            <a href="{% url 'dna:api_repo' repo.slug %}">Download as JSON</a>
+            <form method="post" action="{% url 'dna:delete' repo.slug %}" data-confirm="Remove {{ repo.full_name }} and all of its history from Codebase DNA?">
+              {% csrf_token %}<button type="submit" class="danger">Remove repository</button>
+            </form>
+          </div>
+        </details>
+      </div>
+    </div>
+    {% if latest %}
+    <nav class="tabs" aria-label="Repository sections">
+      <a href="{% url 'dna:repo' repo.slug %}" {% if active_tab == 'overview' %}aria-current="page"{% endif %}>Overview</a>
+      <a href="{% url 'dna:timeline' repo.slug %}" {% if active_tab == 'timeline' %}aria-current="page"{% endif %}>Timeline</a>
+      <a href="{% url 'dna:hotspots' repo.slug %}" {% if active_tab == 'hotspots' %}aria-current="page"{% endif %}>Hotspots</a>
+      <a href="{% url 'dna:findings' repo.slug %}" {% if active_tab == 'findings' %}aria-current="page"{% endif %}>Findings</a>
+      <a href="{% url 'dna:dependencies' repo.slug %}" {% if active_tab == 'dependencies' %}aria-current="page"{% endif %}>Dependencies</a>
+      {% if snapshots|length > 1 %}<a href="{% url 'dna:compare' repo.slug %}" {% if active_tab == 'compare' %}aria-current="page"{% endif %}>Compare</a>{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+</section>
+
+{% if run and run.is_active %}
+<div class="wrap">
+  <div class="progress-card" data-poll="{% url 'dna:status' repo.slug %}">
+    <div class="progress-text">
+      <strong>Reading the history of {{ repo.name }}…</strong>
+      <span data-stage>{{ run.stage }}</span>
+    </div>
+    <div class="progress-bar"><span data-bar style="width: {{ run.progress }}%"></span></div>
+    <p class="muted small">Big repositories take a minute or two. You can leave this page — the work carries on.</p>
+  </div>
+</div>
+{% elif run and run.status == 'failed' %}
+<div class="wrap">
+  <div class="callout callout-bad">
+    <strong>The last analysis didn't finish.</strong>
+    <p>{{ run.error }}</p>
+  </div>
+</div>
+{% endif %}

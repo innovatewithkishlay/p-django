@@ -1,0 +1,58 @@
+{% extends "dna/base.html" %}
+{% block title %}How it works · Codebase DNA{% endblock %}
+{% block content %}
+<section class="wrap section prose-page">
+  <p class="eyebrow">Method</p>
+  <h1 class="display small-display">How Codebase DNA reads a repository</h1>
+  <p class="lede">A single scan tells you how a project looks today. It can't tell you whether it's getting better or worse, or why.
+    Codebase DNA measures the same project at several points in its history, the same way every time, and explains the differences.</p>
+
+  <ol class="steps">
+    <li>
+      <h3>Clone and read history</h3>
+      <p>The repository is cloned (blob-less, so only the files we actually check out are downloaded). We walk the first-parent history of the default branch.</p>
+    </li>
+    <li>
+      <h3>Pick the snapshots</h3>
+      <p>Up to eight commits, spread evenly from the first commit to the latest. When a tagged release sits close to one of those points, we use the release instead — “v2.0 vs v3.0” means more than two hashes. Re-running only analyses commits that are new.</p>
+    </li>
+    <li>
+      <h3>Measure every file</h3>
+      <p>Python is parsed with its own <code>ast</code> module. For JavaScript, TypeScript, Java, Go, Rust, C#, PHP and friends, comments and strings are blanked out and braces are matched to find each function. For each file we record lines of code, comments, functions, cyclomatic complexity, nesting depth, a maintainability index and TODO notes.</p>
+    </li>
+    <li>
+      <h3>Look at behaviour, not just code</h3>
+      <p>From <code>git log</code> we count how often each file changed in the 300 commits before the snapshot, and by how many people. A file's <em>heat</em> combines change frequency with complexity — the idea behind behavioural code analysis.</p>
+    </li>
+    <li>
+      <h3>Check for risk</h3>
+      <p>Pattern rules look for leaked credentials, <code>eval</code>, shell injection, SQL built from strings, disabled TLS checks, unsafe deserialisation and more. Dependency manifests are parsed to see what is pinned and what is known to be abandoned. Copy-pasted blocks are found by hashing every six-line window.</p>
+    </li>
+    <li>
+      <h3>Score and explain</h3>
+      <p>The measurements become six scores — the genes — and a weighted health score. Then a set of rules compares each snapshot with the one before (and with the very first) to write findings: what happened, why it matters, what to do. Findings are ranked so the most useful fix is first.</p>
+    </li>
+  </ol>
+
+  <h2>The six genes</h2>
+  <div class="gene-table card card-flush">
+    <table class="table">
+      <thead><tr><th>Gene</th><th>Weight</th><th>Built from</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Complexity</strong></td><td>20%</td><td>Average cyclomatic complexity per function, share of functions above 10, deepest nesting.</td></tr>
+        <tr><td><strong>Maintainability</strong></td><td>20%</td><td>Maintainability index (Halstead volume, complexity, size, comments), duplication, very large files, very long functions.</td></tr>
+        <tr><td><strong>Testing</strong></td><td>20%</td><td>Lines of test code relative to source code, and whether CI runs them.</td></tr>
+        <tr><td><strong>Security</strong></td><td>20%</td><td>Risky patterns weighted by severity per thousand lines; any critical finding caps the score.</td></tr>
+        <tr><td><strong>Dependencies</strong></td><td>10%</td><td>Share of unpinned packages, known-risky packages, sheer number of dependencies.</td></tr>
+        <tr><td><strong>Documentation</strong></td><td>10%</td><td>README (and whether it says anything), comment density, licence.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted small">Grades: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, E below.</p>
+
+  <h2>What it is not</h2>
+  <p>It isn't a compiler, a coverage tool or a vulnerability database. The numbers are heuristics, chosen to be <em>consistent</em> across snapshots, so a trend is meaningful even when an absolute number is debatable. Treat the findings as a well-informed colleague's opinion — a good place to start a conversation, not a verdict.</p>
+
+  <p><a class="btn btn-primary" href="{% url 'dna:home' %}">Analyse a repository</a></p>
+</section>
+{% endblock %}

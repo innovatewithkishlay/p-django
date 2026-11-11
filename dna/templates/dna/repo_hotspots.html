@@ -1,0 +1,57 @@
+{% extends "dna/base.html" %}
+{% load dna humanize %}
+{% block title %}Hotspots · {{ repo.full_name }}{% endblock %}
+{% block content %}
+{% include "dna/partials/repo_header.html" %}
+
+<section class="wrap section">
+  <div class="section-head">
+    <h2>Hotspot map</h2>
+    <p class="muted">Right = changed often. Up = complicated. Bubble size = lines of code. The top-right corner is where refactoring pays off most.</p>
+  </div>
+  <div class="card chart-card hotspot-chart">
+    <canvas id="hotspotChart" height="380"></canvas>
+    <div class="quadrant-notes" aria-hidden="true">
+      <span class="q-tr">Refactor here</span>
+      <span class="q-tl">Complex but stable</span>
+      <span class="q-br">Busy but simple</span>
+    </div>
+  </div>
+</section>
+
+<section class="wrap section two-col wide-left">
+  <div>
+    <div class="section-head"><h2>Files by heat</h2></div>
+    <div class="card card-flush">
+      <table class="table">
+        <thead><tr><th>File</th><th class="num">Lines</th><th class="num">Changes</th><th class="num">Authors</th><th class="num">Complexity</th><th class="num">Heat</th></tr></thead>
+        <tbody>
+        {% for f in files %}
+          <tr>
+            <td class="path" title="{{ f.path }}">{{ f.path|truncatechars:56 }}</td>
+            <td class="num">{{ f.code_lines|intcomma }}</td>
+            <td class="num">{{ f.churn }}</td>
+            <td class="num">{{ f.authors }}</td>
+            <td class="num">{{ f.complexity }}</td>
+            <td class="num"><span class="heat" style="--heat: {{ f.hotspot_score }}%">{{ f.hotspot_score|floatformat:0 }}</span></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div>
+    <div class="section-head"><h2>Hardest functions</h2></div>
+    <ol class="fn-list">
+      {% for fn in functions %}
+      <li>
+        <div class="fn-top"><code>{{ fn.name }}()</code><span class="score-chip {% if fn.complexity > 20 %}t1{% elif fn.complexity > 10 %}t2{% else %}t4{% endif %}">{{ fn.complexity }}</span></div>
+        <p class="muted small">{{ fn.path }}:{{ fn.line }} · {{ fn.length }} lines</p>
+      </li>
+      {% empty %}<li class="muted">No functions found.</li>{% endfor %}
+    </ol>
+    <p class="muted small">Number = cyclomatic complexity: how many independent paths run through the function. Above 10 is hard to test; above 20 is hard to understand.</p>
+  </div>
+</section>
+{{ points|json_script:"points" }}
+{% endblock %}

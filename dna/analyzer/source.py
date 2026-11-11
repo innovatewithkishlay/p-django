@@ -11,6 +11,7 @@ consistent across snapshots, and consistency is what matters for trends.
 import ast
 import math
 import re
+import warnings
 from dataclasses import dataclass, field
 
 LONG_FUNCTION_LINES = 60
@@ -219,7 +220,9 @@ def analyze_python(path, text):
     clean = _strip_code(text, ("#",), None)
     clean_lines = clean.splitlines()
     try:
-        tree = ast.parse(text)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            tree = ast.parse(text)
     except (SyntaxError, ValueError):
         tree = None
 

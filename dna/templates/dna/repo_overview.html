@@ -1,0 +1,135 @@
+{% extends "dna/base.html" %}
+{% load dna humanize %}
+{% block title %}{{ repo.full_name }} · Codebase DNA{% endblock %}
+{% block content %}
+{% include "dna/partials/repo_header.html" %}
+
+{% if not latest %}
+  {% if not run.is_active %}
+  <div class="wrap section">
+    <div class="empty">
+      <h3>No snapshots yet</h3>
+      <p>Start an analysis to build the first DNA profile for this repository.</p>
+      <form method="post" action="{% url 'dna:reanalyze' repo.slug %}">{% csrf_token %}<button class="btn btn-primary">Analyse now</button></form>
+    </div>
+  </div>
+  {% endif %}
+{% else %}
+<div class="wrap section">
+  <div class="summary-grid">
+    <div class="card health-card">
+      <div class="ring-wrap">
+        {% ring latest.health_score %}
+        <div class="ring-label"><strong>{{ latest.health_score }}</strong><span>health</span></div>
+      </div>
+      <div class="health-copy">
+        <p class="eyebrow">Grade {{ latest.grade }} at {{ latest.label }}{% if previous %} · <span class="{% if health_delta >= 0 %}up{% else %}down{% endif %}">{{ health_delta|signed }} since {{ previous.label }}</span>{% endif %}</p>
+        <p class="summary">{{ latest.summary }}</p>
+        <p class="muted small">Commit <code>{{ latest.short_sha }}</code> by {{ latest.author }} · {{ latest.committed_at|date:"j M Y" }} — “{{ latest.commit_message|truncatechars:80 }}”</p>
+      </div>
+    </div>
+
+    <div class="card scores-card">
+      <h2 class="card-title">The six genes</h2>
+      <ul class="score-list">
+        {% for label, score, field in latest.scores %}
+        <li>
+          <span class="score-name">{{ label }}</span>
+          <span class="bar"><span class="bar-fill {{ score|tone }}" style="width: {{ score }}%"></span></span>
+          <span class="score-num">{{ score }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<section class="wrap section">
+  <div class="section-head">
+    <h2>DNA strand</h2>
+    <p class="muted">Each column is a snapshot; each band is one of the six genes. Read it left to right like a timeline — click a column to open it.</p>
+  </div>
+  <div class="card card-flush">
+    {% include "dna/partials/strand.html" %}
+    <div class="tone-key" aria-hidden="true"><span class="gene t1"></span>Poor<span class="gene t2"></span><span class="gene t3"></span><span class="gene t4"></span><span class="gene t5"></span>Healthy</div>
+  </div>
+</section>
+
+<section class="wrap section two-col">
+  <div>
+    <div class="section-head">
+      <h2>Fix this first</h2>
+      <a class="link" href="{% url 'dna:findings' repo.slug %}">All findings →</a>
+    </div>
+    {% for f in fix_first %}
+      {% include "dna/partials/finding.html" %}
+    {% empty %}
+      <div class="empty small"><p>Nothing urgent. This is a well-kept codebase.</p></div>
+    {% endfor %}
+    {% for f in wins %}{% include "dna/partials/finding.html" %}{% endfor %}
+  </div>
+  <div>
+    <div class="section-head"><h2>Health over time</h2></div>
+    <div class="card chart-card">
+      <canvas id="healthChart" height="240" aria-label="Health score over time"></canvas>
+    </div>
+
+    <div class="section-head mt"><h2>Hotspots</h2><a class="link" href="{% url 'dna:hotspots' repo.slug %}">Map →</a></div>
+    <div class="card card-flush">
+      <table class="table compact">
+        <thead><tr><th>File</th><th class="num">Changes</th><th class="num">Complexity</th><th class="num">Heat</th></tr></thead>
+        <tbody>
+        {% for f in hotspots %}
+          <tr>
+            <td class="path" title="{{ f.path }}">{{ f.path|truncatechars:42 }}</td>
+            <td class="num">{{ f.churn }}</td>
+            <td class="num">{{ f.complexity }}</td>
+            <td class="num"><span class="heat" style="--heat: {{ f.hotspot_score }}%">{{ f.hotspot_score|floatformat:0 }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="muted">No file stands out — changes are spread evenly.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="wrap section">
+  <div class="section-head"><h2>Vital signs</h2>{% if previous %}<p class="muted">Change since {{ previous.label }}</p>{% endif %}</div>
+  <div class="metric-grid">
+    {% for c in cards %}
+    <div class="metric">
+      <p class="metric-label">{{ c.label }}</p>
+      <p class="metric-value">{{ c.value|metric:c.kind }}</p>
+      {% if c.delta is not None %}<p class="metric-delta {{ c.mood }}">{{ c.delta|signed:c.kind }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="wrap section two-col">
+  <div>
+    <div class="section-head"><h2>Languages</h2></div>
+    <div class="card">
+      <div class="stack-bar">{% for l in language_bars %}<span style="width: {{ l.share }}%; background: {{ l.color }}" title="{{ l.name }} {{ l.share|floatformat:1 }}%"></span>{% endfor %}</div>
+      <ul class="legend-list">
+        {% for l in language_bars|slice:":6" %}<li><span class="dot" style="background: {{ l.color }}"></span>{{ l.name }}<span class="muted">{{ l.share|floatformat:1 }}%</span></li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div>
+    <div class="section-head"><h2>Architecture</h2><p class="muted">Where the code lives</p></div>
+    <div class="card">
+      <ul class="module-list">
+        {% for m in module_bars %}
+        <li><span class="path">{{ m.name }}</span><span class="bar"><span class="bar-fill neutral" style="width: {{ m.share }}%"></span></span><span class="num muted">{{ m.lines|intcomma }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+
+{{ series|json_script:"series" }}
+{% endif %}
+{% endblock %}

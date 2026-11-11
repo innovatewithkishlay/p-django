@@ -1,0 +1,64 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Codebase DNA{% endblock %}</title>
+  <meta name="description" content="Codebase DNA tracks how a repository's complexity, tests, security and maintainability change over time — and tells you what to fix first.">
+  <link rel="icon" href="{% static 'dna/favicon.svg' %}" type="image/svg+xml">
+  <link rel="preload" href="{% static 'dna/fonts/fraunces-latin-opsz-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'dna/css/app.css' %}">
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem("dna-theme");
+        if (saved) document.documentElement.setAttribute("data-theme", saved);
+      } catch (e) {}
+    })();
+  </script>
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="{% url 'dna:home' %}">
+        <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true">
+          <path d="M8 3c0 7 12 7 12 11S8 18 8 25" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M20 3c0 7-12 7-12 11s12 4 12 11" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M10 7.5h8M10 20.5h8M11.5 11h5M11.5 17h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".55"/>
+        </svg>
+        <span>Codebase <em>DNA</em></span>
+      </a>
+      <nav class="topnav" aria-label="Main">
+        <a href="{% url 'dna:home' %}" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}>Repositories</a>
+        <a href="{% url 'dna:how' %}" {% if request.resolver_match.url_name == 'how' %}aria-current="page"{% endif %}>How it works</a>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch colour theme">
+          <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M20.5 14.1A8.5 8.5 0 0 1 9.9 3.5a8.5 8.5 0 1 0 10.6 10.6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  {% if messages %}
+  <div class="wrap flash-stack">
+    {% for message in messages %}<div class="flash flash-{{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
+  </div>
+  {% endif %}
+
+  <main id="main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <p>Codebase DNA — read how your code is ageing, before it gets hard to change.</p>
+      <p class="muted">Built with Django · Analysis runs locally on the server, no code leaves it.</p>
+    </div>
+  </footer>
+
+  <script src="{% static 'dna/vendor/chart.umd.min.js' %}" defer></script>
+  <script src="{% static 'dna/js/app.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

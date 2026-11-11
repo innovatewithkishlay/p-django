@@ -1,0 +1,65 @@
+{% extends "dna/base.html" %}
+{% load dna %}
+{% block title %}Dependencies · {{ repo.full_name }}{% endblock %}
+{% block content %}
+{% include "dna/partials/repo_header.html" %}
+
+<section class="wrap section">
+  <div class="metric-grid three">
+    <div class="metric"><p class="metric-label">Declared packages</p><p class="metric-value">{{ deps|length }}</p></div>
+    <div class="metric"><p class="metric-label">Without a version limit</p><p class="metric-value {% if pin_counts.unpinned %}bad-text{% endif %}">{{ pin_counts.unpinned|default:0 }}</p></div>
+    <div class="metric"><p class="metric-label">Known to be risky</p><p class="metric-value {% if risky %}bad-text{% endif %}">{{ risky|length }}</p></div>
+  </div>
+</section>
+
+{% if risky %}
+<section class="wrap section">
+  <div class="section-head"><h2>Worth replacing</h2></div>
+  <div class="risk-list">
+    {% for d in risky %}
+    <div class="card risk">
+      <p><strong>{{ d.name }}</strong> <code class="muted">{{ d.spec }}</code></p>
+      <p>{{ d.risk }}</p>
+      <p class="muted small">{{ d.manifest }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="wrap section two-col wide-left">
+  <div>
+    <div class="section-head"><h2>All dependencies</h2></div>
+    {% if deps %}
+    <div class="card card-flush">
+      <table class="table">
+        <thead><tr><th>Package</th><th>Version</th><th>Pinning</th><th>Declared in</th></tr></thead>
+        <tbody>
+          {% for d in deps %}
+          <tr>
+            <td><strong>{{ d.name }}</strong>{% if d.dev %} <span class="chip">dev</span>{% endif %}</td>
+            <td><code>{{ d.spec }}</code></td>
+            <td><span class="pin pin-{{ d.pin }}">{{ d.pin }}</span></td>
+            <td class="muted">{{ d.manifest }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty small"><p>No dependency manifest (requirements.txt, pyproject.toml, package.json, go.mod, Cargo.toml, Gemfile) was found.</p></div>
+    {% endif %}
+  </div>
+  <div>
+    <div class="section-head"><h2>Over time</h2></div>
+    <div class="card chart-card"><canvas id="depsChart" height="260"></canvas></div>
+    <div class="card explainer">
+      <h3 class="card-title">Reading the pinning column</h3>
+      <p><span class="pin pin-pinned">pinned</span> exact version — reproducible builds.</p>
+      <p><span class="pin pin-ranged">ranged</span> bounded range such as <code>^2.1</code> or <code>~=2.1</code> — fine with a lock file.</p>
+      <p><span class="pin pin-unpinned">unpinned</span> no upper limit — the next release upstream can break you.</p>
+    </div>
+  </div>
+</section>
+{{ series|json_script:"series" }}
+{% endblock %}

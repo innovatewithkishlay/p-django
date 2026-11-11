@@ -1,0 +1,107 @@
+{% extends "dna/base.html" %}
+{% load dna humanize %}
+{% block title %}Compare · {{ repo.full_name }}{% endblock %}
+{% block content %}
+{% include "dna/partials/repo_header.html" %}
+
+<section class="wrap section">
+  <form method="get" class="compare-form card">
+    <div>
+      <label for="a" class="filter-label">From</label>
+      <select name="a" id="a" data-autosubmit>
+        {% for s in snapshots %}<option value="{{ s.short_sha }}" {% if s.pk == a.pk %}selected{% endif %}>{{ s.label }} · {{ s.committed_at|date:"M Y" }}</option>{% endfor %}
+      </select>
+    </div>
+    <span class="compare-arrow" aria-hidden="true">→</span>
+    <div>
+      <label for="b" class="filter-label">To</label>
+      <select name="b" id="b" data-autosubmit>
+        {% for s in snapshots %}<option value="{{ s.short_sha }}" {% if s.pk == b.pk %}selected{% endif %}>{{ s.label }} · {{ s.committed_at|date:"M Y" }}</option>{% endfor %}
+      </select>
+    </div>
+    <p class="muted compare-span">{{ days|intcomma }} days apart · {{ added_count }} file{{ added_count|pluralize }} added · {{ removed_count }} removed</p>
+    <noscript><button class="btn">Compare</button></noscript>
+  </form>
+</section>
+
+<section class="wrap section two-col">
+  <div>
+    <div class="section-head"><h2>Scores</h2></div>
+    <div class="card card-flush">
+      <table class="table">
+        <thead><tr><th></th><th class="num">{{ a.label }}</th><th class="num">{{ b.label }}</th><th class="num">Change</th></tr></thead>
+        <tbody>
+          {% for r in score_rows %}
+          <tr {% if forloop.first %}class="strong-row"{% endif %}>
+            <td>{{ r.label }}</td>
+            <td class="num"><span class="score-chip {{ r.a|tone }}">{{ r.a }}</span></td>
+            <td class="num"><span class="score-chip {{ r.b|tone }}">{{ r.b }}</span></td>
+            <td class="num {% if r.delta > 0 %}up{% elif r.delta < 0 %}down{% endif %}">{{ r.delta|signed }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div>
+    <div class="section-head"><h2>Measurements</h2></div>
+    <div class="card card-flush">
+      <table class="table">
+        <thead><tr><th></th><th class="num">{{ a.label }}</th><th class="num">{{ b.label }}</th><th class="num">Change</th></tr></thead>
+        <tbody>
+          {% for m in metric_rows %}
+          <tr>
+            <td>{{ m.label }}</td>
+            <td class="num">{{ m.old|metric:m.kind }}</td>
+            <td class="num">{{ m.value|metric:m.kind }}</td>
+            <td class="num metric-delta {{ m.mood }}">{{ m.delta|signed:m.kind }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="wrap section two-col">
+  <div>
+    <div class="section-head"><h2>Got more complex</h2></div>
+    <div class="card card-flush">
+      <table class="table compact">
+        <thead><tr><th>File</th><th class="num">Before</th><th class="num">After</th><th class="num">Δ</th></tr></thead>
+        <tbody>
+        {% for c in worse %}
+          <tr><td class="path" title="{{ c.path }}">{{ c.path|truncatechars:44 }}</td><td class="num">{{ c.before }}</td><td class="num">{{ c.after }}</td><td class="num down">+{{ c.delta }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="muted">No file got more complex.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div>
+    <div class="section-head"><h2>Got simpler</h2></div>
+    <div class="card card-flush">
+      <table class="table compact">
+        <thead><tr><th>File</th><th class="num">Before</th><th class="num">After</th><th class="num">Δ</th></tr></thead>
+        <tbody>
+        {% for c in better %}
+          <tr><td class="path" title="{{ c.path }}">{{ c.path|truncatechars:44 }}</td><td class="num">{{ c.before }}</td><td class="num">{{ c.after }}</td><td class="num up">{{ c.delta }}</td></tr>
+        {% empty %}<tr><td colspan="4" class="muted">No file got simpler.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="wrap section two-col">
+  <div>
+    <div class="section-head"><h2>New problems</h2><p class="muted">Present in {{ b.label }}, not in {{ a.label }}</p></div>
+    {% for f in new_findings %}{% include "dna/partials/finding.html" %}{% empty %}<div class="empty small"><p>No new problems. 🎉</p></div>{% endfor %}
+  </div>
+  <div>
+    <div class="section-head"><h2>Resolved</h2><p class="muted">Present in {{ a.label }}, gone by {{ b.label }}</p></div>
+    {% for f in resolved %}
+    <div class="resolved"><span class="tick" aria-hidden="true">✓</span><div><strong>{{ f.title }}</strong><p class="muted small">{{ f.get_category_display }}</p></div></div>
+    {% empty %}<div class="empty small"><p>Nothing was resolved in between.</p></div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

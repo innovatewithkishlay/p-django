@@ -1,0 +1,62 @@
+{% extends "dna/base.html" %}
+{% load dna humanize %}
+{% block title %}Timeline · {{ repo.full_name }}{% endblock %}
+{% block content %}
+{% include "dna/partials/repo_header.html" %}
+
+<section class="wrap section">
+  <div class="section-head">
+    <h2>How the six genes moved</h2>
+    <p class="muted">Scores from 0 to 100, higher is healthier. Click a legend item to hide a line.</p>
+  </div>
+  <div class="card chart-card"><canvas id="genesChart" height="300"></canvas></div>
+</section>
+
+<section class="wrap section chart-grid">
+  <div class="card chart-card">
+    <h3 class="card-title">Size: code vs tests</h3>
+    <p class="muted small">If the green area doesn't grow with the grey one, test coverage is quietly shrinking.</p>
+    <canvas id="sizeChart" height="220"></canvas>
+  </div>
+  <div class="card chart-card">
+    <h3 class="card-title">Complexity</h3>
+    <p class="muted small">Average decision points per function, and how many functions are over the limit of 10.</p>
+    <canvas id="complexityChart" height="220"></canvas>
+  </div>
+  <div class="card chart-card">
+    <h3 class="card-title">Maintainability &amp; duplication</h3>
+    <p class="muted small">Maintainability index (higher is better) against the share of copy-pasted code.</p>
+    <canvas id="maintChart" height="220"></canvas>
+  </div>
+  <div class="card chart-card">
+    <h3 class="card-title">Risk signals</h3>
+    <p class="muted small">Risky code patterns, unpinned dependencies and TODO notes.</p>
+    <canvas id="riskChart" height="220"></canvas>
+  </div>
+</section>
+
+<section class="wrap section">
+  <div class="section-head"><h2>Every snapshot</h2></div>
+  <div class="card card-flush">
+    <table class="table">
+      <thead>
+        <tr><th>Snapshot</th><th>Date</th><th>Commit</th><th class="num">Lines</th><th class="num">Health</th><th class="num">Change</th><th class="num">Regressions</th></tr>
+      </thead>
+      <tbody>
+      {% for row in rows %}
+        <tr class="row-link" data-href="{{ row.s.get_absolute_url }}">
+          <td><a href="{{ row.s.get_absolute_url }}"><strong>{{ row.s.label }}</strong></a>{% if row.s.tag %} <span class="chip">release</span>{% endif %}</td>
+          <td>{{ row.s.committed_at|date:"j M Y" }}</td>
+          <td class="muted">{{ row.s.commit_message|truncatechars:56 }}</td>
+          <td class="num">{{ row.s.code_lines|intcomma }}</td>
+          <td class="num"><span class="score-chip {{ row.s.health_score|tone }}">{{ row.s.health_score }}</span></td>
+          <td class="num {% if row.delta > 0 %}up{% elif row.delta < 0 %}down{% endif %}">{% if row.delta is not None %}{{ row.delta|signed }}{% else %}<span class="muted">first</span>{% endif %}</td>
+          <td class="num">{% if row.regressions %}<span class="regress">{{ row.regressions }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{{ series|json_script:"series" }}
+{% endblock %}

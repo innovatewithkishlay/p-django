@@ -1,0 +1,11 @@
+<article class="finding sev-{{ f.severity }}">
+  <header>
+    <span class="sev-pill sev-{{ f.severity }}">{{ f.get_severity_display }}</span>
+    <span class="cat">{{ f.get_category_display }}</span>
+    {% if f.is_regression %}<span class="regress" title="Got worse compared to the previous snapshot">↘ regression</span>{% endif %}
+  </header>
+  <h3>{{ f.title }}</h3>
+  <p class="why">{{ f.explanation|linebreaksbr }}</p>
+  {% if f.recommendation %}<p class="todo"><span>What to do</span>{{ f.recommendation }}</p>{% endif %}
+  {% if f.file_path %}<p class="where"><code>{{ f.file_path }}{% if f.line %}:{{ f.line }}{% endif %}</code></p>{% endif %}
+</article>

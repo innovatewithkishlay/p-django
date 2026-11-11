@@ -1,0 +1,16 @@
+{% load dna %}
+<div class="strand {% if compact %}strand-compact{% endif %}" role="img" aria-label="DNA strand: one column per snapshot, one band per quality dimension">
+  {% if not compact %}
+  <div class="strand-legend" aria-hidden="true">
+    <span>Complexity</span><span>Maintainability</span><span>Testing</span><span>Security</span><span>Dependencies</span><span>Docs</span>
+  </div>
+  {% endif %}
+  <div class="strand-cols">
+    {% for col in strand %}
+    <{% if compact %}span{% else %}a href="{{ col.snapshot.get_absolute_url }}"{% endif %} class="strand-col" title="{{ col.snapshot.label }} · {{ col.snapshot.committed_at|date:'M Y' }} · health {{ col.snapshot.health_score }}">
+      {% for label, score in col.cells %}<span class="gene {{ score|tone }}" data-tip="{{ label }} {{ score }}"></span>{% endfor %}
+      {% if not compact %}<span class="strand-label">{{ col.snapshot.label|truncatechars:10 }}</span>{% endif %}
+    </{% if compact %}span{% else %}a{% endif %}>
+    {% endfor %}
+  </div>
+</div>

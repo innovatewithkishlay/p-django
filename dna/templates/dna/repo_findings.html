@@ -1,0 +1,48 @@
+{% extends "dna/base.html" %}
+{% load dna %}
+{% block title %}Findings · {{ repo.full_name }}{% endblock %}
+{% block content %}
+{% include "dna/partials/repo_header.html" %}
+
+<section class="wrap section findings-layout">
+  <aside class="filters">
+    <form method="get" class="filter-form">
+      <label class="filter-label" for="at">Snapshot</label>
+      <select name="at" id="at" data-autosubmit>
+        {% for s in snapshots reversed %}<option value="{{ s.short_sha }}" {% if s.pk == snapshot.pk %}selected{% endif %}>{{ s.label }} · {{ s.committed_at|date:"M Y" }}</option>{% endfor %}
+      </select>
+
+      <p class="filter-label">Area</p>
+      <div class="filter-chips">
+        <label class="fchip"><input type="radio" name="category" value="" {% if not category %}checked{% endif %} data-autosubmit>All</label>
+        {% for value, label, n in categories %}{% if n %}
+        <label class="fchip"><input type="radio" name="category" value="{{ value }}" {% if category == value %}checked{% endif %} data-autosubmit>{{ label }} <span class="muted">{{ n }}</span></label>
+        {% endif %}{% endfor %}
+      </div>
+
+      <p class="filter-label">Severity</p>
+      <div class="filter-chips">
+        <label class="fchip"><input type="radio" name="severity" value="" {% if not severity %}checked{% endif %} data-autosubmit>Any</label>
+        {% for value, label in severities %}
+        <label class="fchip"><input type="radio" name="severity" value="{{ value }}" {% if severity == value %}checked{% endif %} data-autosubmit><span class="dot sev-dot-{{ value }}"></span>{{ label }}</label>
+        {% endfor %}
+      </div>
+
+      <label class="check"><input type="checkbox" name="regressions" value="1" {% if only_regressions %}checked{% endif %} data-autosubmit> Only things that got worse</label>
+      <noscript><button class="btn">Apply</button></noscript>
+    </form>
+  </aside>
+
+  <div>
+    <div class="section-head">
+      <h2>{{ findings|length }} finding{{ findings|length|pluralize }} at {{ snapshot.label }}</h2>
+      <p class="muted">Ordered by what to fix first.</p>
+    </div>
+    {% for f in findings %}
+      {% include "dna/partials/finding.html" %}
+    {% empty %}
+      <div class="empty small"><p>Nothing matches those filters.</p></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

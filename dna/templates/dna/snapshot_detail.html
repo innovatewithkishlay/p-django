@@ -1,0 +1,98 @@
+{% extends "dna/base.html" %}
+{% load dna humanize %}
+{% block title %}{{ snapshot.label }} · {{ repo.full_name }}{% endblock %}
+{% block content %}
+{% include "dna/partials/repo_header.html" %}
+
+<section class="wrap section">
+  <div class="snap-nav">
+    {% if prev_snapshot %}<a class="btn btn-ghost" href="{{ prev_snapshot.get_absolute_url }}">← {{ prev_snapshot.label }}</a>{% else %}<span></span>{% endif %}
+    <div class="snap-title">
+      <p class="eyebrow">Snapshot</p>
+      <h2>{{ snapshot.label }} <span class="muted">· {{ snapshot.committed_at|date:"j M Y" }}</span></h2>
+    </div>
+    {% if next_snapshot %}<a class="btn btn-ghost" href="{{ next_snapshot.get_absolute_url }}">{{ next_snapshot.label }} →</a>{% else %}<span></span>{% endif %}
+  </div>
+
+  <div class="summary-grid">
+    <div class="card health-card">
+      <div class="ring-wrap">
+        {% ring snapshot.health_score %}
+        <div class="ring-label"><strong>{{ snapshot.health_score }}</strong><span>grade {{ snapshot.grade }}</span></div>
+      </div>
+      <div class="health-copy">
+        <p class="summary">{{ snapshot.summary }}</p>
+        <p class="muted small"><code>{{ snapshot.commit_sha }}</code><br>{{ snapshot.author }} — “{{ snapshot.commit_message|truncatechars:100 }}”</p>
+        {% if prev_snapshot %}<a class="link" href="{% url 'dna:compare' repo.slug %}?a={{ prev_snapshot.short_sha }}&b={{ snapshot.short_sha }}">Compare with {{ prev_snapshot.label }} →</a>{% endif %}
+      </div>
+    </div>
+    <div class="card scores-card">
+      <h2 class="card-title">Genes</h2>
+      <ul class="score-list">
+        {% for label, score, field in snapshot.scores %}
+        <li><span class="score-name">{{ label }}</span><span class="bar"><span class="bar-fill {{ score|tone }}" style="width: {{ score }}%"></span></span><span class="score-num">{{ score }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="wrap section">
+  <div class="metric-grid">
+    {% for c in cards %}
+    <div class="metric">
+      <p class="metric-label">{{ c.label }}</p>
+      <p class="metric-value">{{ c.value|metric:c.kind }}</p>
+      {% if c.delta is not None %}<p class="metric-delta {{ c.mood }}">{{ c.delta|signed:c.kind }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="wrap section">
+  <div class="section-head">
+    <h2>Files <span class="muted">({{ file_total|intcomma }})</span></h2>
+    <form method="get" class="inline-search">
+      <input type="hidden" name="sort" value="{{ sort }}">
+      <input type="search" name="q" value="{{ query }}" placeholder="Filter by path…" aria-label="Filter files by path">
+    </form>
+  </div>
+  <div class="card card-flush scroll-x">
+    <table class="table">
+      <thead>
+        <tr>
+          <th><a href="?sort=path&q={{ query|urlencode }}">Path</a></th>
+          <th>Lang</th>
+          <th class="num"><a href="?sort=-code_lines&q={{ query|urlencode }}">Lines</a></th>
+          <th class="num"><a href="?sort=-complexity&q={{ query|urlencode }}">Complexity</a></th>
+          <th class="num"><a href="?sort=-max_function_complexity&q={{ query|urlencode }}">Worst fn</a></th>
+          <th class="num"><a href="?sort=maintainability&q={{ query|urlencode }}">MI</a></th>
+          <th class="num"><a href="?sort=-churn&q={{ query|urlencode }}">Changes</a></th>
+          <th class="num"><a href="?sort=-hotspot_score&q={{ query|urlencode }}">Heat</a></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for f in files %}
+        <tr>
+          <td class="path" title="{{ f.path }}">{{ f.path|truncatechars:60 }}{% if f.is_test %} <span class="chip">test</span>{% endif %}{% if f.security_issues %} <span class="chip chip-bad" title="Risky patterns">⚠ {{ f.security_issues }}</span>{% endif %}</td>
+          <td class="muted">{{ f.language }}</td>
+          <td class="num">{{ f.code_lines|intcomma }}</td>
+          <td class="num">{{ f.complexity }}</td>
+          <td class="num" title="{{ f.max_function_name }}">{{ f.max_function_complexity|default:"—" }}</td>
+          <td class="num"><span class="score-chip {{ f.maintainability|tone }}">{{ f.maintainability|floatformat:0 }}</span></td>
+          <td class="num">{{ f.churn }}</td>
+          <td class="num">{% if f.hotspot_score %}<span class="heat" style="--heat: {{ f.hotspot_score }}%">{{ f.hotspot_score|floatformat:0 }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap section">
+  <div class="section-head"><h2>Findings at this point</h2><a class="link" href="{% url 'dna:findings' repo.slug %}?at={{ snapshot.short_sha }}">Filter →</a></div>
+  <div class="finding-grid">
+    {% for f in findings %}{% include "dna/partials/finding.html" %}{% empty %}<div class="empty small"><p>No findings.</p></div>{% endfor %}
+  </div>
+</section>
+{% endblock %}
